@@ -8,7 +8,11 @@ export default createStore({
     cards: [],
     scorePlayer1: 0,
     scorePlayer2: 0,
-    matchId: null,
+    match: {
+      matchId: null,
+      idPlayer1: null,
+      idPlayer2: null
+    },
   },
   getters: {
   },
@@ -24,23 +28,28 @@ export default createStore({
     getUser(state) {
       state.user = JSON.parse(localStorage.getItem('user'))
     },
-    async getCards(state) {
+    async getCards(state, user) {
       await fetch('http://localhost:3000/api/cards')
         .then((response) => response.json())
-        .then((data) => {
-          data = data.sort(() => Math.random() - 0.5).slice(0, 12)
-          this.commit('setBoard', data)
+        .then((cards) => {
+          cards = cards.sort(() => Math.random() - 0.5).slice(0, 12)
+          this.commit('setBoard', {
+            cards: cards,
+            user: user
+          })
         })
     },
-    setBoard(state, cards) {
+    setBoard(state, data) {
 			let array = []
-			cards.forEach((card) => {
+			data.cards.forEach((card) => {
 				array.push(card)
 				// create a copy of the card with "-2" to the end and push it to the array
         array.push({ ...card, slug: card.slug + '-2' })
 			})
 			state.cards = array
 			state.cards.sort(() => Math.random() - 0.5)
+
+      state.match.idPlayer1 = data.user.user.id
 
       globals.$socket.emit('setBoard', state.cards)
     },

@@ -13,7 +13,10 @@
 		</div>
 		<div v-else>
 			<h1>Fin de la partie</h1>
-			<h2>Le gagnant est : {{ scorePlayer1 > scorePlayer2 ? 'Player 1' : 'Player 2' }}</h2>
+			<h2>
+				Le gagnant est :
+				{{ scorePlayer1 > scorePlayer2 ? 'Player 1' : 'Player 2' }}
+			</h2>
 			<button @click="reload">Recommencer</button>
 		</div>
 	</section>
@@ -39,58 +42,69 @@
 				return this.$store.state.cards
 			},
 			endGame() {
-				if(this.scorePlayer1 + this.scorePlayer2 === 120) {
+				if (this.scorePlayer1 + this.scorePlayer2 === 120) {
 					fetch('https://hp-api-iim.azurewebsites.net/matches/end', {
-					method: 'POST',
-					headers: {
-						'Content-Type': 'application/json',
-						'Authorization': `Bearer ${this.$store.state.user.token}`
-					},
-					body: JSON.stringify({
-						gameId: this.$store.state.matchId,
-						userIds: [54, 45],
-						userId: 54
-					}),
-				})
-					.then((response) => response.json())
-					.then((data) => {
-						if (data.end) {
-							this.$socket.emit('endGame', {
-								scorePlayer1: this.scorePlayer1,
-								scorePlayer2: this.scorePlayer2,
-							})
-						}
+						method: 'POST',
+						headers: {
+							'Content-Type': 'application/json',
+							Authorization: `Bearer ${this.$store.state.user.token}`,
+						},
+						body: JSON.stringify({
+							gameId: this.$store.state.match.matchId,
+							userIds: [
+								this.$store.state.match.idPlayer1,
+								this.$store.state.match.idPlayer2,
+							],
+							userId:
+								this.scorePlayer1 > this.scorePlayer2
+									? this.$store.state.match.idPlayer1
+									: this.$store.state.match.idPlayer2,
+						}),
 					})
+						.then((response) => response.json())
+						.then((data) => {
+							if (data.end) {
+								this.$socket.emit('endGame', {
+									scorePlayer1: this.scorePlayer1,
+									scorePlayer2: this.scorePlayer2,
+								})
+							}
+						})
 				}
 				return this.scorePlayer1 + this.scorePlayer2 === 120
-			}
+			},
 		},
 		methods: {
 			reload() {
 				this.$socket.emit('restart')
 			},
 		},
-		created() {
-			fetch('https://hp-api-iim.azurewebsites.net/matches/start', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer ' + this.$store.state.user.token,
-        },
-        body: JSON.stringify({
-          game: 'memHarry',
-          userIds: [54, 45],
-          type: '1v1',
-        }),
-      })
-      .then((response) => response.json())
-      .then((data) => {
-        console.log(data)
-        this.$store.state.matchId = data.id
-      })
-			this.$store.commit('getCards')
+		async created() {
+			await fetch('https://hp-api-iim.azurewebsites.net/matches/start', {
+				method: 'POST',
+				headers: {
+					'Content-Type': 'application/json',
+					Authorization: 'Bearer ' + this.$store.state.user.token,
+				},
+				body: JSON.stringify({
+					game: 'memHarry',
+					userIds: [this.$store.state.match.idPlayer1],
+					type: '1v1',
+				}),
+			})
+				.then((response) => response.json())
+				.then((data) => {
+					console.log(data)
+					this.$store.state.match.matchId = data.id
+				})
+
+			console.log(this.$store.state.match)
+			this.$store.commit('getCards', JSON.parse(localStorage.getItem('user')))
 			this.$socket.on('setBoard', (board) => {
 				this.$store.state.cards = board
+				this.$store.state.match.idPlayer2 = JSON.parse(
+					localStorage.getItem('user')
+				).user.id
 			})
 			this.$socket.on('flipCard', (slug) => {
 				this.$store.commit('checkCard', slug)
@@ -121,16 +135,16 @@
 		height: 120px;
 		width: 80px;
 		/*background-color: bisque;*/
-    background-image: url("@/assets/card.png");
-    background-size: cover;
-    border-radius: 10px;
+		background-image: url('@/assets/card.png');
+		background-size: cover;
+		border-radius: 10px;
 	}
 
 	.card img {
 		width: 100%;
 		height: 100%;
 		object-fit: cover;
-		opacity: 0;
+		opacity: 0.8;
 	}
 
 	.flip {
