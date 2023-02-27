@@ -33,7 +33,7 @@ In root folder, run `bash Stop.sh`, it kills the processes on the ports 3000, 80
 
 # Authors
 
-- De Guarrigues Nicolas
+- De Garrigues Nicolas
 - Louveau Tom
 - Quintin Florent
 - Braunschweig Malo
